@@ -1,0 +1,15 @@
+FROM zjia/nightcore:asplos-ae as nightcore
+FROM lechou/golang1.18:v0.1 as builder
+
+COPY . /of
+COPY --from=nightcore /src/nightcore /src/nightcore
+RUN mkdir -p build
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN cd /of && go build -o build/of -ldflags="-s -w" .
+
+FROM lechou/ubuntu:v0.1
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
+COPY --from=builder   /of/build /go/src/build
+COPY --from=nightcore /nightcore/launcher     /nightcore/launcher
+
+WORKDIR /go/src

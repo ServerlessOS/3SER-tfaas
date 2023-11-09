@@ -1,0 +1,35 @@
+{
+    "machines": {
+        "tfaasexp-gateway": { "type": "c5d.2xlarge", "role": "manager" },
+        "tfaasexp-middle-1": { "type": "c5d.2xlarge", "role": "worker", "labels": ["middle_node=true"] },
+        "tfaasexp-middle-2": { "type": "c5d.2xlarge", "role": "worker", "labels": ["middle_node=true"] },
+        "tfaasexp-middle-3": { "type": "c5d.2xlarge", "role": "worker", "labels": ["middle_node=true"] },
+        "tfaasexp-worker1": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker2": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker3": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker4": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker5": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker6": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker7": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-worker8": { "type": "c5d.2xlarge", "role": "worker", "labels": ["engine_node=true"] },
+        "tfaasexp-client": { "type": "c5d.xlarge", "role": "client" }
+    },
+    "services": {
+        "tfaas-gateway": { "placement": "tfaasexp-gateway" },
+        "tfaas-engine": { "placement_label": "engine_node", "replicas": 8 },
+        "etcd": { "placement": "tfaasexp-gateway" },
+        "middleshim": { "placement_label": "middle_node", "replicas": 3 },
+        "cacheserver": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-test": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-deleteworkflow": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-isDelete": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-delete": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-registerworkflow": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-isRegister": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-register": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-listCoursesworkflow": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-listCourses": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-resetworkflow": { "placement_label": "engine_node", "replicas": 8 },
+        "tfaas-resetCourse": { "placement_label": "engine_node", "replicas": 8 }
+    }
+}

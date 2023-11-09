@@ -1,0 +1,14 @@
+FROM lechou/golang1.18:v0.1 as build
+RUN mkdir -p /go/src/handler/static
+WORKDIR /go/src/handler
+COPY . .
+RUN go env -w GOFLAGS="-buildvcs=false"
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN go build --ldflags "-s -w" -o static/main .
+
+FROM lechou/ubuntu:v0.1
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
+RUN mkdir -p /home/app
+WORKDIR /home/app
+COPY --from=build /go/src/handler/static  static
+WORKDIR /home/app/static

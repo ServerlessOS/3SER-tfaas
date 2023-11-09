@@ -1,0 +1,5 @@
+requests
+nightcore/ipc/*
+nightcore/output/*
+cluster/docker-compose-placement.yml
+cluster/machines.json

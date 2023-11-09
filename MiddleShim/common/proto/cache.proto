@@ -1,0 +1,104 @@
+/*
+ * @Author: lechoux lechoux@qq.com
+ * @Date: 2022-08-15 11:37:06
+ * @LastEditors: lechoux lechoux@qq.com
+ * @LastEditTime: 2022-11-20 22:14:26
+ * @Description:
+ */
+
+syntax = "proto3";
+
+option go_package = "./;proto";
+
+import "google/protobuf/empty.proto";
+
+enum CacheError {
+
+  NO_ERROR = 0;
+  KEY_DNE = 1;
+  RETRY = 2;
+  ABORT = 3;
+}
+
+message WriteRequest {
+
+  string key = 1;
+  bytes value = 2;
+  string tid = 3;
+  string response_address = 4;
+}
+
+message Keys {
+
+  repeated string keys = 1;
+}
+
+message CommitRequest {
+
+  string tid = 1;
+  int64 commitTimestamp = 2;
+  SessionRequest session = 3;
+  map<string, Keys> readSet = 4;
+  map<string, Keys> writeSet = 5;
+  string response_address = 6;
+  bool local = 7;
+  bytes output = 8;
+  repeated string deps = 9;
+}
+
+message CommitResponse {
+
+  string tid = 1;
+  CacheError error = 2;
+  string IPAddress = 3;
+}
+
+message KeyRequest {
+
+  string key = 1;
+  string tid = 2;
+  string response_address = 3;
+  int64 wTimestamp = 4;
+  string keyAddress = 5;
+}
+
+message KeyResponse {
+
+  bytes value = 1;
+  int64 wTimestamp = 2;
+  int64 rTimestamp = 3;
+  CacheError error = 4;
+}
+
+message KeyValuePair {
+
+  string key = 1;
+  bytes value = 2;
+  string tid = 3;
+  int64 wTimestamp = 4;
+  int64 rTimestamp = 5;
+}
+
+message SessionRequest {
+  string client = 1;
+  int64 timeFence = 2;
+}
+
+message ErrorResponse { CacheError error = 1; }
+
+service middleshim {
+
+  rpc Lock(KeyRequest) returns (KeyResponse) {}
+
+  rpc GetSession (SessionRequest) returns (SessionRequest) {}
+  
+  rpc SetSession (SessionRequest) returns (google.protobuf.Empty) {}
+
+  rpc Update(KeyValuePair) returns (google.protobuf.Empty) {}
+
+  rpc CacheMiss(KeyRequest) returns (google.protobuf.Empty) {}
+
+  rpc validate1(KeyValuePair) returns (ErrorResponse) {}
+
+  rpc validate2(KeyValuePair) returns (ErrorResponse) {}
+}

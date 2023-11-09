@@ -1,0 +1,13 @@
+[
+    { "funcName": "test", "funcId": 1, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "deleteworkflow", "funcId": 2, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "registerworkflow", "funcId": 3, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "listCoursesworkflow", "funcId": 4, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "resetworkflow", "funcId": 5, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "delete", "funcId": 6, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "register", "funcId": 7, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "isDelete", "funcId": 8, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "isRegister", "funcId": 9, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "listCourses", "funcId": 10, "minWorkers": 12, "maxWorkers": 12 },
+    { "funcName": "resetCourse", "funcId": 11, "minWorkers": 12, "maxWorkers": 12 }
+  ]

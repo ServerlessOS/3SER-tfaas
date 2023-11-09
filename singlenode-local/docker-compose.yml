@@ -1,0 +1,240 @@
+version: "3.8"
+services:
+  tfaas-engine:
+    image: zjia/nightcore:asplos-ae
+    hostname: faas-engine-1
+    entrypoint:
+      - /nightcore/engine
+      - --gateway_addr=tfaas-gateway
+      - --root_path_for_ipc=/tmp/nightcore/ipc
+      - --func_config_file=/tmp/nightcore/func_config.json
+      - --num_io_workers=4
+      - --gateway_conn_per_worker=32
+      - --disable_monitor
+      - --instant_rps_p_norm=0.8
+    depends_on:
+      - tfaas-gateway
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /sys/fs/cgroup:/tmp/root_cgroupfs
+    environment:
+      - FAAS_CGROUP_FS_ROOT=/tmp/root_cgroupfs
+
+  tfaas-gateway:
+    image: zjia/nightcore:asplos-ae
+    ports:
+      - 8080:8080
+    entrypoint:
+      - /nightcore/gateway
+      - --listen_addr=0.0.0.0
+      - --http_port=8080
+      - --func_config_file=/tmp/nightcore/func_config.json
+      - --num_io_workers=8
+      - --lb_per_fn_round_robin
+      - --max_running_requests=0
+    volumes:
+      - /mnt/inmem/tfaas/func_config.json:/tmp/nightcore/func_config.json
+
+  mongodb1:
+    image: mongo:5
+    hostname: mongodb-1
+    command: mongod --replSet rs0
+    volumes:
+      - /mnt/storage/mongo1:/data/db5
+    restart: always
+
+  mongodb2:
+    image: mongo:5
+    hostname: mongodb-2
+    command: mongod --replSet rs0
+    volumes:
+      - /mnt/storage/mongo2:/data/db
+    restart: always
+
+  mongodb3:
+    image: mongo:5
+    hostname: mongodb-3
+    command: mongod --replSet rs0
+    volumes:
+      - /mnt/storage/mongo3:/data/db
+    restart: always
+
+  mongodb-setup:
+    image: mongo:5
+    working_dir: /tmp/mongo
+    command: /tmp/mongo/mongo_setup.sh
+    depends_on:
+       - mongodb1
+       - mongodb2
+       - mongodb3
+    volumes:
+      - /home/ubuntu/tfaas/scripts/mongo_setup.sh:/tmp/mongo/mongo_setup.sh
+      - /home/ubuntu/tfaas/scripts/init_mongo_rs.js:/tmp/mongo/init_mongo_rs.js
+      - /home/ubuntu/tfaas/scripts/create_mongo_user.js:/tmp/mongo/create_mongo_user.js
+    restart: always
+
+  etcd:
+    image: bitnami/etcd:3.5
+    hostname: etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    restart: always
+  
+  cacheserver:
+    image: lechou/cacheserver:v2.50
+    hostname: cacheserver-1
+    entrypoint: ["./main"]
+    volumes:
+      - /mnt/inmem/requests:/requests
+    environment:
+      - ETCD_URI=etcd:2379
+      - POD_IP=cacheserver-1
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+    depends_on:
+      - middleshim
+
+  middleshim:
+    image: lechou/middleshim:v2.50
+    hostname: middleshim-1
+    entrypoint: ["./main"]
+    environment:
+      - ETCD_URI=etcd:2379
+      - POD_IP=middleshim-1
+      - caches=cacheserver-1
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+    depends_on:
+      - mongodb-setup
+      - etcd
+  
+  tfaas-test:
+    image: lechou/of:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "of", "1"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+  
+  tfaas-deleteworkflow:
+    image: lechou/of:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "of", "2"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+  
+  tfaas-registerworkflow:
+    image: lechou/of:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "of", "3"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+
+  tfaas-listCoursesworkflow:
+    image: lechou/of:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "of", "4"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+  
+  tfaas-resetworkflow:
+    image: lechou/of:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "of", "5"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+  
+  tfaas-delete:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "6"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+
+  tfaas-register:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "7"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+  
+  tfaas-isDelete:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "8"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+
+  tfaas-isRegister:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "9"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+
+  tfaas-listCourses:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "10"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
+
+  tfaas-resetCourse:
+    image: lechou/ef:v2.50
+    entrypoint: ["/tmp/nightcore/run_launcher", "ef", "11"]
+    volumes:
+      - /mnt/inmem/tfaas:/tmp/nightcore
+      - /mnt/inmem/requests:/requests
+    environment:
+      - FAAS_GO_MAX_PROC_FACTOR=4
+      - GOGC=200
+    depends_on:
+      - cacheserver
